@@ -1,0 +1,15 @@
+# Config do Streamlit DENTRO do contexto de build do frontend (rootDir: frontend).
+# O .streamlit/ da raiz do repo é usado no dev local; este é o que vai na imagem
+# do Render. O secrets.toml (auth) é gerado em runtime pelo docker-entrypoint.sh.
+[theme]
+base = "dark"
+primaryColor = "#10b981"
+backgroundColor = "#0e1117"
+secondaryBackgroundColor = "#161b22"
+textColor = "#e6edf3"
+
+[server]
+maxUploadSize = 10
+
+[browser]
+gatherUsageStats = false

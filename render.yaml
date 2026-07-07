@@ -1,0 +1,72 @@
+# Blueprint de deploy no Render — SaaS de faturas (2 serviços Docker + Neon).
+#
+# Backend FastAPI + Frontend Streamlit, ligados por HTTP. Banco = Neon (nuvem),
+# então NÃO há serviço de banco aqui — só a DATABASE_URL como secret.
+#
+# Como usar:
+#   1. Suba o repo no GitHub.
+#   2. No Render: New → Blueprint → aponte para este repo.
+#   3. Preencha as env vars marcadas `sync: false` (secrets) no painel.
+#   4. Registre o AUTH_REDIRECT_URI (URL pública do frontend + /oauth2callback)
+#      nas "Authorized redirect URIs" do OAuth client no Google Cloud.
+#
+# Segurança: INTERNAL_AUTH_SECRET vive num env group compartilhado, então o MESMO
+# valor chega aos dois serviços (a asserção BFF exige isso). Para esconder o
+# backend da internet, troque-o para `type: pserv` (private service, plano pago) —
+# aí só o frontend o acessa e não precisa de BACKEND_URL público.
+
+envVarGroups:
+  - name: saas-faturas-shared
+    envVars:
+      # MESMO segredo nos dois serviços — cole uma vez aqui.
+      - key: INTERNAL_AUTH_SECRET
+        sync: false
+
+services:
+  - type: web
+    name: saas-faturas-backend
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - fromGroup: saas-faturas-shared
+      - key: DATABASE_URL          # Neon (postgresql://... ; o app normaliza p/ asyncpg)
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ADMIN_EMAILS          # e-mails admin, separados por vírgula
+        sync: false
+      - key: EXTRACT_MODEL
+        value: gpt-5-mini
+      - key: LIMITE_DIARIO_UPLOAD
+        value: "50"
+      - key: UPLOAD_MAX_MB
+        value: "10"
+      - key: ALLOWED_ORIGINS       # frontend chama via httpx (server-side); CORS irrelevante
+        value: "*"
+
+  - type: web
+    name: saas-faturas-frontend
+    runtime: docker
+    rootDir: frontend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - fromGroup: saas-faturas-shared
+      # URL PÚBLICA do backend (https://saas-faturas-backend-XXXX.onrender.com).
+      # No free tier o DNS interno entre web services não resolve — use a pública.
+      - key: BACKEND_URL
+        sync: false
+      # OIDC Google (o entrypoint monta o secrets.toml com estes valores).
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: AUTH_COOKIE_SECRET    # segredo p/ o cookie de sessão do Streamlit
+        sync: false
+      - key: AUTH_REDIRECT_URI     # URL pública do frontend + /oauth2callback
+        sync: false
+      - key: BALTAZAR_MAPAS_PATH
+        value: /app/vendor/mapas_dinamicos.py

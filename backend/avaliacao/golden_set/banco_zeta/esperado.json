@@ -1,0 +1,51 @@
+[
+  {
+    "date": "2026-02-15",
+    "descricao": "SUPERMERCADO OK",
+    "cidade": "SAO PAULO",
+    "parcelas": null,
+    "amount": 245.9
+  },
+  {
+    "date": "2026-02-16",
+    "descricao": "POSTO SHELL",
+    "cidade": "CAMPINAS",
+    "parcelas": null,
+    "amount": 180.0
+  },
+  {
+    "date": "2026-02-18",
+    "descricao": "MAGAZINE LUIZA",
+    "cidade": null,
+    "parcelas": "01/10",
+    "amount": 1299.99
+  },
+  {
+    "date": "2026-02-20",
+    "descricao": "NETFLIX.COM",
+    "cidade": null,
+    "parcelas": null,
+    "amount": 55.9
+  },
+  {
+    "date": "2026-02-22",
+    "descricao": "DROGARIA SP",
+    "cidade": "SAO PAULO",
+    "parcelas": null,
+    "amount": 34.5
+  },
+  {
+    "date": "2026-02-25",
+    "descricao": "UBER *TRIP",
+    "cidade": "RIO DE JANEIRO",
+    "parcelas": null,
+    "amount": 23.45
+  },
+  {
+    "date": "2026-03-01",
+    "descricao": "AMAZON BR",
+    "cidade": null,
+    "parcelas": "02/03",
+    "amount": 89.9
+  }
+]

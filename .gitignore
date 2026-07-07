@@ -1,0 +1,38 @@
+# Segredos — NUNCA versionar (dado financeiro de terceiros é PII sensível)
+.env
+*.env
+!.env.example
+
+# Ambientes virtuais
+myenv/
+venv/
+.venv/
+env/
+
+# PII: faturas reais nunca entram no repo (golden set só sintético/anonimizado)
+data/
+**/Faturas_*/
+*.pdf
+!backend/avaliacao/golden_set/**/*.pdf
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Notebooks / exploração
+.ipynb_checkpoints/
+*.ipynb
+
+# Streamlit
+.streamlit/secrets.toml
+
+# SO / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+CLAUDE.MD

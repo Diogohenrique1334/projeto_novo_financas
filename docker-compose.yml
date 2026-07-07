@@ -1,0 +1,30 @@
+# Teste local dos dois serviços em Docker (mesmo shape do deploy no Render).
+# Banco = Neon (nuvem), via DATABASE_URL do .env. O frontend monta o
+# .streamlit/secrets.toml existente (auth Google) em vez de gerar de env.
+#
+#   docker compose up --build      → backend :8001, frontend :8501
+#
+services:
+  backend:
+    build: ./backend
+    env_file: .env                 # DATABASE_URL, OPENAI_API_KEY, ADMIN_EMAILS, INTERNAL_AUTH_SECRET
+    ports:
+      - "8001:8001"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8001/health').status==200 else 1)"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  frontend:
+    build: ./frontend
+    env_file: .env                 # herda INTERNAL_AUTH_SECRET (mesmo do backend); extras são ignorados
+    environment:
+      - BACKEND_URL=http://backend:8001   # dentro da rede do compose, pelo nome do serviço
+    volumes:
+      - ./.streamlit/secrets.toml:/app/.streamlit/secrets.toml:ro
+    ports:
+      - "8501:8501"
+    depends_on:
+      backend:
+        condition: service_healthy
