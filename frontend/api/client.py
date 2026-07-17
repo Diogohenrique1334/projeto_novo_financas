@@ -17,10 +17,13 @@ from config import settings
 
 # No free tier do Render o serviço HIBERNA após ~15 min ocioso. A primeira chamada
 # acorda o backend e pode levar ~30-60s, com o proxy devolvendo 502/503/504 no
-# meio do boot. Sem retry, todo primeiro acesso do dia quebra na cara do usuário.
+# meio do boot. O retry é por PRAZO (não por nº de tentativas): reententa até
+# ~80s, folga suficiente pra cobrir o cold start sem raspar no limite.
 _STATUS_ACORDANDO = {502, 503, 504}
-_TENTATIVAS = 5
 _TIMEOUT_PADRAO = 90.0
+_DEADLINE_ACORDA = 80.0   # orçamento total de espera cobrindo o cold start
+_BACKOFF_INICIAL = 1.5
+_BACKOFF_MAX = 8.0
 
 
 def _base_url() -> str:
@@ -54,24 +57,23 @@ def _requisitar(
     LLM já ter rodado, e reententar cobraria a chamada de novo.
     """
     url = f"{_base_url()}{caminho}"
-    espera = 2.0
-    ultima = _TENTATIVAS - 1
+    inicio = time.monotonic()
+    espera = _BACKOFF_INICIAL
 
-    for tentativa in range(_TENTATIVAS):
+    while True:
+        expirou = (time.monotonic() - inicio) >= _DEADLINE_ACORDA
         try:
             resposta = httpx.request(metodo, url, timeout=timeout, **kwargs)
         except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout):
-            if tentativa == ultima:
-                raise
+            if expirou:
+                raise  # não chegou ao servidor e o prazo acabou
         else:
             acordando = retry_5xx and resposta.status_code in _STATUS_ACORDANDO
-            if not acordando or tentativa == ultima:
-                resposta.raise_for_status()
+            if not acordando or expirou:
+                resposta.raise_for_status()  # erro de app sobe na hora; sucesso retorna
                 return resposta
-        time.sleep(espera)
-        espera *= 2
-
-    raise RuntimeError("inalcançável")  # pragma: no cover
+        time.sleep(min(espera, _BACKOFF_MAX))
+        espera = min(espera * 2, _BACKOFF_MAX)
 
 
 def buscar_me() -> dict:
